@@ -57,7 +57,8 @@ enum class NavigationTransitionStyle(val label: String) {
 
 data class AppSettings(
     val mode: ThemeMode = ThemeMode.System,
-    val monet: Boolean = true,
+    /** 系统主题色（Monet 动态取色），出厂默认关：走下方 colorType/palette 静态配色。 */
+    val monet: Boolean = false,
     val colorType: ThemeColorType = ThemeColorType.Default,
     /** 自定义种子色的 6 位 hex（不含 #），仅 colorType == Custom 时使用。 */
     val customSeedHex: String = "6650A4",
@@ -67,8 +68,8 @@ data class AppSettings(
     val haptics: Boolean = true,
     /** 顶栏/底栏模糊内容，需 Android 13 及以上，低版本自动不模糊。 */
     val blurBars: Boolean = false,
-    /** 渐进顶栏模糊：沿 Y 轴由透明渐变到模糊，仅在 [blurBars] 开启时生效。 */
-    val progressiveBlur: Boolean = true,
+    /** 渐进顶栏模糊：沿 Y 轴由透明渐变到模糊，仅在 [blurBars] 开启时生效；出厂默认关。 */
+    val progressiveBlur: Boolean = false,
     val predictiveBack: Boolean = true,
     /** 转场 / 预测返回样式，默认 MIUI（与参考项目默认值一致）。 */
     val transitionStyle: NavigationTransitionStyle = NavigationTransitionStyle.MIUIX,

@@ -218,7 +218,7 @@ fun AboutScreen(onBack: () -> Unit) {
                                         title = "12306 官方接口",
                                         summary = "来自网络公开官方接口",
                                     )
-                                    ArrowPreference(
+                                    BasicComponent(
                                         title = "第三方数据源",
                                         summary = if (showSourceDetail) "点击收起详细说明" else "点击查看详细说明",
                                         onClick = { showSourceDetail = !showSourceDetail },

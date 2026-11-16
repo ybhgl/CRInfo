@@ -95,7 +95,7 @@ class SettingsStore(private val context: Context) {
     val settings: Flow<AppSettings> = context.settingsStore.data.map { prefs ->
         AppSettings(
             mode = resolve(prefs[modeKey]) { n -> ThemeMode.entries.find { it.name == n } } ?: ThemeMode.System,
-            monet = prefs[monetKey] ?: true,
+            monet = prefs[monetKey] ?: false,
             colorType = resolve(prefs[colorKey]) { n -> ThemeColorType.entries.find { it.name == n } } ?: ThemeColorType.Default,
             customSeedHex = prefs[customSeedKey]?.takeIf { it.matches(Regex("^[0-9a-fA-F]{6}$")) } ?: "6650A4",
             palette = resolve(prefs[paletteKey]) { n -> PaletteStyle.entries.find { it.name == n } } ?: PaletteStyle.TonalSpot,
@@ -103,7 +103,7 @@ class SettingsStore(private val context: Context) {
             floatingBar = prefs[floatingBarKey] ?: false,
             haptics = prefs[hapticsKey] ?: true,
             blurBars = prefs[blurKey] ?: false,
-            progressiveBlur = prefs[progressiveBlurKey] ?: true,
+            progressiveBlur = prefs[progressiveBlurKey] ?: false,
             predictiveBack = prefs[predictiveBackKey] ?: true,
             transitionStyle = resolve(prefs[transitionStyleKey]) { n ->
                 NavigationTransitionStyle.entries.find { it.name == n }

@@ -3,6 +3,7 @@ package com.crinfo.app.ui.components
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -94,6 +95,7 @@ fun RemotePicture(
     url: String?,
     contentDescription: String?,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
 ) {
     var bitmap by remember(url) { mutableStateOf(url?.let { pictureCache[it] }) }
     LaunchedEffect(url) {
@@ -118,12 +120,64 @@ fun RemotePicture(
         if (decoded != null) pictureCache[target] = decoded else failedPictures.add(target)
         bitmap = decoded
     }
+    val clickableModifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier
     bitmap?.let {
         Image(
             bitmap = it,
             contentDescription = contentDescription,
-            modifier = modifier,
+            modifier = clickableModifier,
             contentScale = ContentScale.Fit,
         )
+    }
+}
+
+/**
+ * 大图查看器的资源入口，与缩略图共用同一套下载/解码口径（跟随 302、带 UA 与 Referer），
+ * 但按原图全尺寸解码，并单独缓存。查看器只从这几个函数取图，不碰上面的缩略图缓存。
+ */
+object CarImageViewerSource {
+    // 12306 原图实测 7200×4000，ARGB_8888 单张约 115MB；串行解码 + 小容量 LRU 控制峰值。
+    private const val MAX_CACHED_FULL = 2
+    private val fullDecodeSlots = Semaphore(1)
+    private val fullCache = object : LinkedHashMap<String, ImageBitmap>(
+        MAX_CACHED_FULL + 1,
+        1f,
+        true,
+    ) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, ImageBitmap>?): Boolean =
+            size > MAX_CACHED_FULL
+    }
+    private val cacheLock = Any()
+
+    /** 缩略图（最长边 1280px），大图未就绪时先显示它，避免白屏。 */
+    fun thumbnail(url: String): ImageBitmap? = pictureCache[url]
+
+    /** 取已解码的原图；命中直接返回，未命中返回 null 由调用方安排加载。 */
+    fun peekFull(url: String): ImageBitmap? = synchronized(cacheLock) { fullCache[url] }
+
+    /**
+     * 原图全尺寸解码。串行执行避免多页同时解码叠加峰值；失败（含 OOM 与网络错）返回 null，
+     * 调用方据此保留缩略图占位。解码后写入小 LRU，淘汰的位图交给 GC 回收。
+     */
+    suspend fun loadFull(url: String): ImageBitmap? = withContext(Dispatchers.IO) {
+        synchronized(cacheLock) { fullCache[url] }?.let { return@withContext it }
+        fullDecodeSlots.withPermit {
+            synchronized(cacheLock) { fullCache[url] }?.let { return@withPermit it }
+            val decoded = runCatching {
+                val request = Request.Builder()
+                    .url(url)
+                    .header("User-Agent", Http.USER_AGENT)
+                    .header("Referer", "https://mobile.12306.cn/")
+                    .build()
+                imageClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) return@use null
+                    response.body?.bytes()?.let { bytes ->
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+                    }
+                }
+            }.getOrNull()
+            if (decoded != null) synchronized(cacheLock) { fullCache[url] = decoded }
+            decoded
+        }
     }
 }

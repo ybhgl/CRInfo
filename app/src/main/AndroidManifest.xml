@@ -25,6 +25,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- 车辆图片大图查看器：透明窗口 + Compose 手势，无第三方图片库 -->
+        <activity
+            android:name=".ui.components.CarImageViewerActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"
+            android:theme="@style/Theme.CRInfo.ImageViewer" />
     </application>
 
 </manifest>

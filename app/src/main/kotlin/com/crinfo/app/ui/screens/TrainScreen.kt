@@ -114,6 +114,7 @@ import com.crinfo.app.ui.components.LocalAppSettings
 import com.crinfo.app.ui.components.AppTopBar
 import com.crinfo.app.ui.components.BarContentGap
 import com.crinfo.app.ui.components.CarImages
+import com.crinfo.app.ui.components.CarImageViewerActivity
 import com.crinfo.app.ui.components.Chip
 import com.crinfo.app.ui.components.ErrorState
 import com.crinfo.app.ui.components.InlineErrorNotice
@@ -1238,7 +1239,9 @@ private fun CarDetailSheet(show: Boolean, detail: TrainDetail?, onDismiss: () ->
  */
 @Composable
 private fun LltskbCarBody(model: LltskbCarModel) {
-    model.images.forEach { image ->
+    val context = LocalContext.current
+    val gallery = model.images.map { it.url }
+    model.images.forEachIndexed { index, image ->
         image.caption?.takeIf { it.isNotBlank() }?.let { caption ->
             Text(
                 text = caption,
@@ -1255,6 +1258,7 @@ private fun LltskbCarBody(model: LltskbCarModel) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = if (image.caption.isNullOrBlank()) 8.dp else 4.dp),
+            onClick = { CarImageViewerActivity.start(context, gallery, index) },
         )
     }
 }
@@ -1262,12 +1266,23 @@ private fun LltskbCarBody(model: LltskbCarModel) {
 /** 12306 车底接口给的那部分：整车图、逐辆席别与定员、座席介绍。 */
 @Composable
 private fun CarDetailBody(car: CarDetail) {
+    val context = LocalContext.current
+    // 整车图 + 逐车厢 + 座席说明拼成一组，点任意一张都能左右翻看全组大图。
+    // 只用非空 URL 建组，保证列表下标与点击的那张一一对应。
+    val gallery = buildList {
+        CarImages.urlOf(car.exteriorUrl)?.let(::add)
+        car.coaches.forEach { CarImages.urlOf(it.url)?.let(::add) }
+        car.seats.forEach { CarImages.urlOf(it.url)?.let(::add) }
+    }
     Column(modifier = Modifier.fillMaxWidth()) {
-        RemotePicture(
-            url = CarImages.urlOf(car.exteriorUrl),
-            contentDescription = "列车图片",
-            modifier = Modifier.fillMaxWidth().height(180.dp),
-        )
+        CarImages.urlOf(car.exteriorUrl)?.let { url ->
+            RemotePicture(
+                url = url,
+                contentDescription = "列车图片",
+                modifier = Modifier.fillMaxWidth().height(180.dp),
+                onClick = { CarImageViewerActivity.start(context, gallery, gallery.indexOf(url)) },
+            )
+        }
         if (car.coaches.isNotEmpty()) {
             Spacer(modifier = Modifier.height(12.dp))
             SectionTitle("车厢编组")
@@ -1276,11 +1291,16 @@ private fun CarDetailBody(car: CarDetail) {
                     Text(text = coach.name, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     // 车厢图本身是约 4:1 的宽图，按原始比例铺满宽度即可；
                     // 固定 120dp + Fit 会在图上下留出约 30dp 空白，看起来像多余的间距。
-                    RemotePicture(
-                        url = CarImages.urlOf(coach.url),
-                        contentDescription = coach.name,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    CarImages.urlOf(coach.url)?.let { url ->
+                        RemotePicture(
+                            url = url,
+                            contentDescription = coach.name,
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = {
+                                CarImageViewerActivity.start(context, gallery, gallery.indexOf(url))
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -1296,11 +1316,16 @@ private fun CarDetailBody(car: CarDetail) {
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
                     Spacer(modifier = Modifier.height(6.dp))
-                    RemotePicture(
-                        url = CarImages.urlOf(seat.url),
-                        contentDescription = seat.name,
-                        modifier = Modifier.fillMaxWidth().height(120.dp),
-                    )
+                    CarImages.urlOf(seat.url)?.let { url ->
+                        RemotePicture(
+                            url = url,
+                            contentDescription = seat.name,
+                            modifier = Modifier.fillMaxWidth().height(120.dp),
+                            onClick = {
+                                CarImageViewerActivity.start(context, gallery, gallery.indexOf(url))
+                            },
+                        )
+                    }
                 }
             }
         }

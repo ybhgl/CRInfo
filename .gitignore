@@ -1,0 +1,18 @@
+# IDE / 编辑器
+*.iml
+/.idea
+.DS_Store
+/.kotlin/
+/.workbuddy/
+
+# Gradle / 构建产物
+.gradle
+/local.properties
+build/
+captures/
+*.apk
+*.aab
+
+# 开发辅助数据（抓包、临时脚本、图标草稿等，不随源码发布）
+/其他数据/
+/tools/

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 路路通离线库与车型参考图只有 HTTP：android.ver / an.db / 裸 IP 镜像 / wap 车型页。
+         逐域名放行，不给全局 usesCleartextTraffic，12306 那些域仍然只走 TLS。 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">down.lltskb.com</domain>
+        <domain includeSubdomains="false">ip.lltskb.com</domain>
+        <domain includeSubdomains="false">223.107.87.50</domain>
+        <!-- 车型参考图的网页与图片也只在 HTTP 上，HTTPS 握手失败 -->
+        <domain includeSubdomains="false">wap.lltskb.com</domain>
+    </domain-config>
+</network-security-config>
